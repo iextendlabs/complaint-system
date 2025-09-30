@@ -17,4 +17,9 @@ class Complaint extends Model
         'file',
         'status',
     ];
+
+    public function statusHistories()
+    {
+        return $this->hasMany(ComplaintStatusHistory::class);
+    }
 }

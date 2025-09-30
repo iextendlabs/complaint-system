@@ -6,120 +6,168 @@
             <h1 class="mb-4">Complaints Dashboard</h1>
             <button type="button" id="exportCsvBtn" class="btn btn-success btn-sm">Export CSV</button>
         </div>
-        <!-- Filters -->
-        <form method="GET" action="{{ route('home') }}" class="mb-4">
-            <div class="filter-card">
-                <h5 class="mb-3 fw-bold">Filter Complaints</h5>
-                <div class="row g-3 align-items-center">
-                    <div class="col-md-6 col-lg-2">
-                        <input type="text" name="name" class="form-control form-control-sm" placeholder="Name"
-                            value="{{ $filters['name'] ?? '' }}">
-                    </div>
-                    <div class="col-md-6 col-lg-2">
-                        <input type="text" name="email" class="form-control form-control-sm" placeholder="Email"
-                            value="{{ $filters['email'] ?? '' }}">
-                    </div>
-                    <div class="col-md-6 col-lg-3">
-                        <div class="d-flex align-items-center">
-                            <input type="date" name="from_date" class="form-control form-control-sm me-2"
-                                value="{{ $filters['from_date'] ?? '' }}">
-                            <input type="date" name="to_date" class="form-control form-control-sm"
-                                value="{{ $filters['to_date'] ?? '' }}">
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-lg-2">
-                        <select name="status" class="form-select form-select-sm">
-                            <option value="">All Statuses</option>
-                            @foreach (config('complaints.statuses') as $status => $color)
-                                <option value="{{ $status }}"
-                                    {{ ($filters['status'] ?? '') == $status ? 'selected' : '' }}>
-                                    {{ $status }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-6 col-lg-3">
-                        <div class="d-flex gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="confidential" value="1"
-                                    id="confidentialCheck"
-                                    {{ isset($filters['confidential']) && $filters['confidential'] == '1' ? 'checked' : '' }}>
-                                <label class="form-check-label small" for="confidentialCheck">Confidential</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="accepted" value="1"
-                                    id="acceptedCheck"
-                                    {{ isset($filters['accepted']) && $filters['accepted'] == '1' ? 'checked' : '' }}>
-                                <label class="form-check-label small" for="acceptedCheck">Declaration
-                                    Accepted</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
-                        <a href="{{ route('home') }}" class="btn btn-light btn-sm">Clear</a>
-                    </div>
+
+        {{-- Reports Section --}}
+        <div class="row mb-4 dashboard-reports-row">
+            <div class="col-12 col-md-3 mb-2">
+                <div class="dashboard-report-card text-center py-3 px-2">
+                    <div class="fw-bold fs-4">{{ $reports['total'] ?? 0 }}</div>
+                    <div class="text-muted">Total Complaints</div>
                 </div>
             </div>
-        </form>
+            @foreach ($reports['by_status'] ?? [] as $status => $count)
+                <div class="col-12 col-md-2 mb-2">
+                    <div class="dashboard-report-card text-center py-3 px-2">
+                        <div class="fw-bold fs-5">{{ $count }}</div>
+                        <div class="text-muted">{{ $status }}</div>
+                    </div>
+                </div>
+            @endforeach
+            <div class="col-12 col-md-3 mb-2">
+                <div class="dashboard-report-card text-center py-3 px-2">
+                    <div class="fw-bold fs-5">{{ $reports['recent'] ?? 0 }}</div>
+                    <div class="text-muted">Last 7 Days</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-9 order-2 order-lg-1">
+                <div class="complaints-list row g-4" id="complaintsList">
+                    @forelse ($complaints as $complaint)
+                        <div class="complaints-list__item complaint-item col-12 col-md-6 col-lg-4"
+                            style="animation-delay: {{ $loop->index * 50 }}ms">
+                            <div class="complaint-card status-{{ Str::slug($complaint->status) }}">
+                                <div class="complaint-card__header d-flex justify-content-between align-items-start">
+                                    <div class="complaint-card__user d-flex align-items-center">
+                                        <div>
+                                            <small class="complaint-card__id text-muted">Tracking ID:#
+                                                {{ substr($complaint->tracking_id, 0, 8) }}</small>
+                                            <h6 class="complaint-card__name fw-bold text-dark mb-0 text-truncate"
+                                                style="max-width: 150px;" title="{{ $complaint->name }}">
+                                                {{ $complaint->name }}</h6>
+                                            <p> {{ $complaint->email }}</p>
+                                        </div>
+                                    </div>
+                                    <span
+                                        class="complaint-card__status badge rounded-pill bg-{{ config('complaints.statuses')[$complaint->status] ?? 'secondary' }}-soft">{{ $complaint->status }}</span>
+                                </div>
 
-        <div class="row g-4" id="complaintsList">
-            @forelse ($complaints as $complaint)
-                <div class="col-12 col-md-6 col-lg-4 complaint-item" data-status="{{ $complaint->status }}"
-                    data-confidential="{{ $complaint->isConfidential ? 'true' : 'false' }}"
-                    data-accepted="{{ $complaint->declarationAccepted ? 'true' : 'false' }}"
-                    data-date="{{ $complaint->created_at->format('Y-m-d') }}" data-name="{{ $complaint->name }}"
-                    data-email="{{ $complaint->email }}" style="animation-delay: {{ $loop->index * 50 }}ms">
-                    <div class="complaint-card-new status-{{ Str::slug($complaint->status) }}">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="d-flex align-items-center">
-                                <div>
-                                    <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 150px;"
-                                        title="{{ $complaint->name }}">{{ $complaint->name }}</h6>
-                                    <small class="text-muted">ID: {{ substr($complaint->tracking_id, 0, 8) }}</small>
+                                <p class="complaint-card__desc small my-3 flex-grow-1">
+                                    {{ Str::limit($complaint->complaint, 120) }}
+                                </p>
+
+                                @if ($complaint->isConfidential || $complaint->file)
+                                    <div class="complaint-card__meta mb-3">
+                                        @if ($complaint->isConfidential)
+                                            <span
+                                                class="complaint-card__confidential badge bg-danger-soft text-danger small">Confidential</span>
+                                        @endif
+                                        @if ($complaint->file)
+                                            <a href="{{ asset('storage/' . $complaint->file) }}" target="_blank"
+                                                class="complaint-card__attachment text-primary small text-decoration-none ms-2">
+                                                <i class="bi bi-paperclip"></i> Attachment
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                <div
+                                    class="complaint-card__footer d-flex justify-content-between align-items-center border-top pt-2">
+                                    <small class="complaint-card__date text-muted fs-xs"><i class="bi bi-clock me-1"></i>
+                                        {{ $complaint->created_at->format('M j, Y') }}</small>
+                                    <div class="d-flex gap-2">
+                                        <button
+                                            class="complaint-card__update-btn btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0 update-status-btn"
+                                            data-id="{{ $complaint->id }}" data-bs-toggle="modal"
+                                            data-bs-target="#statusModal">Update</button>
+                                        <button
+                                            class="complaint-card__delete-btn btn btn-sm btn-link text-danger fw-bold text-decoration-none p-0 delete-complaint-btn"
+                                            data-id="{{ $complaint->id }}">Delete</button>
+                                    </div>
                                 </div>
                             </div>
-                            <span
-                                class="badge rounded-pill bg-{{ config('complaints.statuses')[$complaint->status] ?? 'secondary' }}-soft">{{ $complaint->status }}</span>
                         </div>
-
-                        <p class="small my-3 flex-grow-1">
-                            {{ Str::limit($complaint->complaint, 120) }}
-                        </p>
-
-                        @if ($complaint->isConfidential || $complaint->file)
-                            <div class="mb-3">
-                                @if ($complaint->isConfidential)
-                                    <span class="badge bg-danger-soft text-danger small">Confidential</span>
-                                @endif
-                                @if ($complaint->file)
-                                    <a href="{{ asset('storage/' . $complaint->file) }}" target="_blank"
-                                        class="text-primary small text-decoration-none ms-2">
-                                        <i class="bi bi-paperclip"></i> Attachment
-                                    </a>
-                                @endif
+                    @empty
+                        <div class="col-12">
+                            <div class="alert alert-info text-center small">
+                                No complaints found.
                             </div>
-                        @endif
-
-                        <div class="d-flex justify-content-between align-items-center border-top pt-2">
-                            <small class="text-muted fs-xs"><i class="bi bi-clock me-1"></i>
-                                {{ $complaint->created_at->format('M j, Y') }}</small>
-                            <button
-                                class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0 update-status-btn"
-                                data-id="{{ $complaint->id }}" data-bs-toggle="modal"
-                                data-bs-target="#statusModal">
-                                Update
-                            </button>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+            <div class="col-lg-3 order-1 order-lg-2 mb-4 mb-lg-0">
+                <form method="GET" action="{{ route('home') }}">
+                    <div class="filter filter--stylish sidebar-filter p-4 mb-4 mb-lg-0">
+                        <div class="filter__fields d-flex flex-column gap-4">
+                            <div class="mb-2">
+                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                    for="filterName">Name</label>
+                                <input id="filterName" type="text" name="name"
+                                    class="filter__input form-control form-control-sm rounded-pill" placeholder="Name"
+                                    value="{{ $filters['name'] ?? '' }}">
+                            </div>
+                            <div class="mb-2">
+                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                    for="filterTrackingId">Tracking ID</label>
+                                <input id="filterTrackingId" type="text" name="tracking_id"
+                                    class="filter__input form-control form-control-sm rounded-pill"
+                                    placeholder="Tracking ID" value="{{ $filters['tracking_id'] ?? '' }}">
+                            </div>
+                            <div class="mb-2">
+                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                    for="filterEmail">Email</label>
+                                <input id="filterEmail" type="text" name="email"
+                                    class="filter__input form-control form-control-sm rounded-pill" placeholder="Email"
+                                    value="{{ $filters['email'] ?? '' }}">
+                            </div>
+                            <div class="mb-2">
+                                <label class="filter__label form-label mb-1 fw-semibold text-muted">Date</label>
+                                <div class="filter__date-range d-flex flex-wrap gap-2 align-items-center">
+                                    <input type="date" name="from_date"
+                                        class="filter__input filter__input--date form-control form-control-sm rounded-pill"
+                                        value="{{ $filters['from_date'] ?? '' }}">
+                                    <span class="mx-1 text-muted">-</span>
+                                    <input type="date" name="to_date"
+                                        class="filter__input filter__input--date form-control form-control-sm rounded-pill"
+                                        value="{{ $filters['to_date'] ?? '' }}">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                    for="filterStatus">Status</label>
+                                <select id="filterStatus" name="status"
+                                    class="filter__input form-select form-select-sm rounded-pill">
+                                    <option value="">All Statuses</option>
+                                    @foreach (config('complaints.statuses') as $status => $color)
+                                        <option value="{{ $status }}"
+                                            {{ ($filters['status'] ?? '') == $status ? 'selected' : '' }}>
+                                            {{ $status }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="filter__switches d-flex flex-column gap-2 mb-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="confidential" value="1"
+                                        id="confidentialCheck"
+                                        {{ isset($filters['confidential']) && $filters['confidential'] == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label small" for="confidentialCheck">Confidential</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="accepted" value="1"
+                                        id="acceptedCheck"
+                                        {{ isset($filters['accepted']) && $filters['accepted'] == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label small" for="acceptedCheck">Declaration Accepted</label>
+                                </div>
+                            </div>
+                            <div class="filter__actions d-flex gap-2 align-items-end mt-2">
+                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Apply</button>
+                                <a href="{{ route('home') }}" class="btn btn-light btn-sm rounded-pill px-3">Clear</a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @empty
-                <div class="col-12">
-                    <div class="alert alert-info text-center small">
-                        No complaints found.
-                    </div>
-                </div>
-            @endforelse
+                </form>
+            </div>
         </div>
 
         @if ($complaints->hasPages())
@@ -152,190 +200,90 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        $(document).ready(function() {
+            $('#exportCsvBtn').on('click', function() {
                 window.location.href = '{{ route('complaints.export') }}' + window.location.search;
             });
 
             let currentComplaintId = null;
-            document.querySelectorAll('.update-status-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    currentComplaintId = this.dataset.id;
-                    document.getElementById('complaintId').value = currentComplaintId;
 
-                    const item = this.closest('.complaint-item');
-                    const status = item.dataset.status;
-                    document.getElementById('statusSelect').value = status;
-                });
+            $('.update-status-btn').on('click', function() {
+                currentComplaintId = $(this).data('id');
+                $('#complaintId').val(currentComplaintId);
+
+                let item = $(this).closest('.complaint-item');
+                let status = item.length ? item.data('status') : null;
+                if (!status) {
+                    let card = $(this).closest('.complaint-card');
+                    if (card.length) {
+                        let classes = card.attr('class').split(' ');
+                        let statusClass = classes.find(c => c.startsWith('status-'));
+                        if (statusClass) {
+                            status = statusClass.replace('status-', '').replace(/-/g, ' ');
+                            $('#statusSelect option').each(function() {
+                                if ($(this).val().toLowerCase() === status.toLowerCase()) {
+                                    status = $(this).val();
+                                }
+                            });
+                        }
+                    }
+                }
+                $('#statusSelect').val(status);
             });
 
-            document.getElementById('statusForm').addEventListener('submit', function(e) {
+            $('#statusForm').on('submit', function(e) {
                 e.preventDefault();
-                const status = document.getElementById('statusSelect').value;
-                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                fetch(`/complaints/${currentComplaintId}/update-status`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': token
-                        },
-                        body: JSON.stringify({
-                            status
-                        })
-                    })
-                    .then(r => r.json())
-                    .then(data => {
+                const status = $('#statusSelect').val();
+                const token = $('meta[name="csrf-token"]').attr('content');
+
+                $.ajax({
+                    url: `/complaints/${currentComplaintId}/update-status`,
+                    method: 'POST',
+                    data: JSON.stringify({
+                        status
+                    }),
+                    contentType: 'application/json',
+                    headers: {
+                        'X-CSRF-TOKEN': token
+                    },
+                    success: function(data) {
                         if (data.success) {
                             alert('Updated!');
                             location.reload();
                         } else {
                             alert('Error.');
                         }
-                    });
+                    },
+                    error: function() {
+                        alert('Error occurred while updating.');
+                    }
+                });
+            });
+            $('.delete-complaint-btn').on('click', function() {
+                const id = $(this).data('id');
+                if (!confirm('Are you sure you want to delete this complaint?')) return;
+                const token = $('meta[name="csrf-token"]').attr('content');
+                $.ajax({
+                    url: `/complaints/${id}`,
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': token
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            alert('Deleted!');
+                            location.reload();
+                        } else {
+                            alert('Error deleting complaint.');
+                        }
+                    },
+                    error: function() {
+                        alert('Error occurred while deleting.');
+                    }
+                });
             });
         });
     </script>
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f7fc;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .complaint-item {
-            animation: fadeInUp 0.5s ease-out forwards;
-            opacity: 0;
-        }
-
-        .complaint-card-new {
-            background: #fff;
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease-in-out;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid transparent;
-        }
-
-        .complaint-card-new.status-open {
-            background: linear-gradient(to bottom, #eef5ff, #ffffff);
-            border-color: #dbeaff;
-        }
-
-        .complaint-card-new.status-in-progress {
-            background: linear-gradient(to bottom, #fff8e1, #ffffff);
-            border-color: #ffefc2;
-        }
-
-        .complaint-card-new.status-resolved {
-            background: linear-gradient(to bottom, #f0fff4, #ffffff);
-            border-color: #dcfce7;
-        }
-
-        .complaint-card-new.status-closed {
-            background: linear-gradient(to bottom, #f8f9fa, #ffffff);
-            border-color: #e9ecef;
-        }
-
-
-        .complaint-card-new:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07);
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
-
-        .bg-warning-soft {
-            background-color: rgba(255, 193, 7, 0.15) !important;
-            color: #b88a00 !important;
-        }
-
-        .bg-info-soft {
-            background-color: rgba(13, 202, 240, 0.15) !important;
-            color: #007a92 !important;
-        }
-
-        .bg-success-soft {
-            background-color: rgba(25, 135, 84, 0.15) !important;
-            color: #146c43 !important;
-        }
-        
-
-        .bg-secondary-soft {
-            background-color: rgba(108, 117, 125, 0.15) !important;
-            color: #566069 !important;
-        }
-
-        .bg-danger-soft {
-            background-color: rgba(220, 53, 69, 0.1) !important;
-            color: #dc3545 !important;
-        }
-
-        .fs-xs {
-            font-size: 0.8rem;
-        }
-
-        .filter-card {
-            background-color: #fff;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-            margin-bottom: 2rem !important;
-            border: none;
-        }
-
-        .filter-card .form-control-sm,
-        .filter-card .form-select-sm {
-            border-radius: 0.5rem;
-            border-color: #e2e8f0;
-            padding: 0.4rem 0.75rem;
-        }
-
-        .filter-card .form-control-sm:focus,
-        .filter-card .form-select-sm:focus {
-            box-shadow: 0 0 0 2px rgba(126, 58, 242, 0.25);
-            border-color: #a57bf7;
-        }
-
-        .filter-card .btn-primary {
-            background-color: #7e3af2;
-            border-color: #7e3af2;
-            font-weight: 600;
-            padding: 0.4rem 1rem;
-        }
-
-        .filter-card .btn-primary:hover {
-            background-color: #6c2bd9;
-            border-color: #6c2bd9;
-        }
-
-        .filter-card .btn-light {
-            border-color: #e2e8f0;
-        }
-    </style>
 @endsection

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('complaints', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->integer('number');
+            $table->string('number');
             $table->string('email');
             $table->integer('tracking_id')->unique();
             $table->text('complaint');
