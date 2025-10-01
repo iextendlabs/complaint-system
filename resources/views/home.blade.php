@@ -30,6 +30,7 @@
                 </div>
             </div>
         </div>
+        @can('complaint-list')
         <div class="row">
             <div class="col-lg-9 order-2 order-lg-1">
                 <div class="complaints-list row g-4" id="complaintsList">
@@ -75,14 +76,25 @@
                                     class="complaint-card__footer d-flex justify-content-between align-items-center border-top pt-2">
                                     <small class="complaint-card__date text-muted fs-xs"><i class="bi bi-clock me-1"></i>
                                         {{ $complaint->created_at->format('M j, Y') }}</small>
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <a href="{{ route('complaints.show', $complaint) }}" class="btn btn-sm btn-link text-info p-0" title="View">
+                                            <i class="bi bi-eye fs-5"></i>
+                                        </a>
+                                        @can('complaint-edit')
                                         <button
-                                            class="complaint-card__update-btn btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0 update-status-btn"
+                                            class="complaint-card__update-btn btn btn-sm btn-link text-primary p-0 update-status-btn"
                                             data-id="{{ $complaint->id }}" data-bs-toggle="modal"
-                                            data-bs-target="#statusModal">Update</button>
+                                            data-bs-target="#statusModal" title="Update">
+                                            <i class="bi bi-pencil-square fs-5"></i>
+                                        </button>
+                                        @endcan
+                                        @can('complaint-delete')
                                         <button
-                                            class="complaint-card__delete-btn btn btn-sm btn-link text-danger fw-bold text-decoration-none p-0 delete-complaint-btn"
-                                            data-id="{{ $complaint->id }}">Delete</button>
+                                            class="complaint-card__delete-btn btn btn-sm btn-link text-danger p-0 delete-complaint-btn"
+                                            data-id="{{ $complaint->id }}" title="Delete">
+                                            <i class="bi bi-trash fs-5"></i>
+                                        </button>
+                                        @endcan
                                     </div>
                                 </div>
                             </div>
@@ -175,6 +187,7 @@
                 {{ $complaints->appends(request()->query())->links() }}
             </div>
         @endif
+        @endcan
     </div>
 
     <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">

@@ -37,4 +37,11 @@ class LoginController extends Controller
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
     }
+    /**
+     * Redirect to login after logout.
+     */
+    protected function loggedOut($request)
+    {
+        return redirect('/login');
+    }
 }

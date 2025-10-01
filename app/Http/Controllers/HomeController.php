@@ -263,4 +263,10 @@ class HomeController extends Controller
             return response()->json(['success' => false, 'message' => 'Failed to delete complaint.'], 500);
         }
     }
+
+    public function complaintShow(Complaint $complaint)
+    {
+        $complaint->load('statusHistories');
+        return view('complaint', ['complaint' => $complaint]);
+    }
 }

@@ -15,16 +15,20 @@ class TrackingController extends Controller
      */
     public function track(Request $request)
     {
-        $data = $request->validate([
-            'tracking_id' => 'required|integer|exists:complaints,tracking_id',
-        ]);
-
-        $complaint = Complaint::where('tracking_id', $data['tracking_id'])->first();
-
-        if (!$complaint) {
-            return view('tracking', ['error' => 'Complaint not found.']);
+        $complaint = null;
+        $error = null;
+        if ($request->filled('tracking_id')) {
+            $request->validate([
+                'tracking_id' => 'required|integer',
+            ]);
+            $complaint = Complaint::where('tracking_id', $request->input('tracking_id'))->first();
+            if (!$complaint) {
+                $error = 'Complaint not found.';
+            }
         }
-
-        return view('tracking', ['complaint' => $complaint]);
+        return view('tracking', [
+            'complaint' => $complaint,
+            'error' => $error,
+        ]);
     }
 }
