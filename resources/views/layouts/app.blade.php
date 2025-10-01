@@ -86,6 +86,11 @@
                                     <a class="dropdown-item" href="{{ route('profile.show') }}">
                                         <i class="bi bi-person-circle"></i> Profile
                                     </a>
+                                    @can('otps-list')
+                                    <a class="dropdown-item" href="{{ route('otps.index') }}">
+                                        <i class="bi bi-list-ul"></i> OTPs List
+                                    </a>
+                                    @endcan
                                     <a class="dropdown-item" href="{{ route('logout') }}"
                                         onclick="event.preventDefault();
                                                      document.getElementById('logout-form').submit();">

@@ -19,7 +19,7 @@ class TrackingController extends Controller
         $error = null;
         if ($request->filled('tracking_id')) {
             $request->validate([
-                'tracking_id' => 'required|integer',
+                'tracking_id' => 'required',
             ]);
             $complaint = Complaint::where('tracking_id', $request->input('tracking_id'))->first();
             if (!$complaint) {

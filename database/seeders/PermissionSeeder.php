@@ -25,6 +25,7 @@ class PermissionSeeder extends Seeder
 			'complaint-edit',
 			'complaint-delete',
 			'complaint-view',
+			'otps-list',
 		];
 
 		foreach ($permissions as $permission) {

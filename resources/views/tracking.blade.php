@@ -182,7 +182,7 @@
                                 @if ($complaint->file)
                                     <div class="mb-2">
                                         <span class="text-muted small">Attachment:</span>
-                                        <a href="{{ asset('storage/' . $complaint->file) }}" target="_blank"
+                                        <a href="{{ asset($complaint->file) }}" target="_blank"
                                             class="complaint-card__attachment text-primary small text-decoration-none ms-2" style="color:#6366f1;text-decoration:underline;margin-left:0.5em;">
                                             <i class="bi bi-paperclip"></i> Download
                                         </a>

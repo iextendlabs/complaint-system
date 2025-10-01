@@ -28,6 +28,11 @@
                                                 <span
                                                     class="badge rounded-pill bg-{{ config('complaints.statuses')[$history->status] ?? 'secondary' }}-soft me-2">{{ $history->status }}</span>
                                                 <span class="fw-semibold">{{ $history->comment ?? '' }}</span>
+                                                <span class="text-muted small ms-2">
+                                                    @if($history->user)
+                                                        by {{ $history->user->name }}
+                                                    @endif
+                                                </span>
                                             </span>
                                             <span
                                                 class="text-muted small">{{ $history->created_at->format('M j, Y H:i') }}</span>
@@ -57,7 +62,7 @@
                         @if ($complaint->file)
                             <div class="mb-1">
                                 <span class="text-muted small">Attachment:</span>
-                                <a href="{{ asset('storage/' . $complaint->file) }}" target="_blank"
+                                <a href="{{ asset($complaint->file) }}" target="_blank"
                                     class="complaint-card__attachment text-primary small text-decoration-none ms-2">
                                     <i class="bi bi-paperclip"></i> Download
                                 </a>

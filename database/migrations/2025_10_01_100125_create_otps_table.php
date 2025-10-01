@@ -11,18 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('complaints', function (Blueprint $table) {
+        Schema::create('otps', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('number');
             $table->string('email');
+            $table->string('number');
+            $table->string('otp');
             $table->string('tracking_id')->unique();
-            $table->text('complaint');
-            $table->boolean('isConfidential')->default(false);
-            $table->boolean('declarationAccepted')->default(false);
-            $table->string('file')->nullable();
-            $table->string('status')->default('Open');
-            
             $table->timestamps();
         });
     }
@@ -32,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('complaints');
+        Schema::dropIfExists('otps');
     }
 };

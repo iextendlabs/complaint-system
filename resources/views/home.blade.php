@@ -64,7 +64,7 @@
                                                 class="complaint-card__confidential badge bg-danger-soft text-danger small">Confidential</span>
                                         @endif
                                         @if ($complaint->file)
-                                            <a href="{{ asset('storage/' . $complaint->file) }}" target="_blank"
+                                            <a href="{{ asset($complaint->file) }}" target="_blank"
                                                 class="complaint-card__attachment text-primary small text-decoration-none ms-2">
                                                 <i class="bi bi-paperclip"></i> Attachment
                                             </a>

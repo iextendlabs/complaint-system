@@ -21,6 +21,7 @@ Route::group(['middleware' => ['auth', 'role:admin|staff']], function () {
     Route::resource('users', UserController::class);
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::resource('otps', \App\Http\Controllers\OtpController::class)->only(['index']);
 });
 
 Route::get('/', [TrackingController::class, 'track'])->name('tracking.get');

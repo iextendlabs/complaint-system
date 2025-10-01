@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Mail\AdminComplaintNotification;
 use App\Mail\UserComplaintNotification;
+use App\Models\ComplaintStatusHistory;
+use App\Models\Otp;
 
 class HomeController extends Controller
 {
@@ -30,20 +32,6 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->isMethod('post')) {
-            $validated = $request->validate([
-                'name' => 'nullable|string|max:255',
-                'email' => 'nullable|string|email|max:255',
-                'date' => 'nullable|date',
-                'status' => 'nullable|string|in:' . implode(',', array_keys(config('complaints.statuses'))),
-                'confidential' => 'nullable|boolean',
-                'accepted' => 'nullable|boolean',
-            ]);
-
-            return redirect()->route('home', array_filter($validated));
-        }
-
-
         $filters = [
             'name' => $request->query('name', ''),
             'email' => $request->query('email', ''),
@@ -82,9 +70,8 @@ class HomeController extends Controller
             $query->where('declarationAccepted', true);
         }
 
-        $complaints = $query->paginate(10);
+        $complaints = $query->paginate(20);
 
-        // Reports data
         $reports = [];
         $reports['total'] = Complaint::count();
         $reports['by_status'] = Complaint::selectRaw('status, COUNT(*) as count')->groupBy('status')->pluck('count', 'status')->toArray();
@@ -103,30 +90,40 @@ class HomeController extends Controller
     {
         try {
             $request->validate([
-                'name' => 'required|string|max:255',
-                'number' => 'required|string',
-                'email' => 'required|email|max:255',
+                'otp_id' => 'required|integer|exists:otps,id',
                 'complaint' => 'required|string',
-                'tracking_id' => 'required|integer|unique:complaints',
-                'isConfidential' => 'boolean',
-                'declarationAccepted' => 'required|boolean',
+                'isConfidential' => 'required',
+                'declarationAccepted' => 'required',
                 'file' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:2048',
             ]);
 
-            $data = $request->only(['name', 'number', 'email', 'complaint', 'isConfidential', 'declarationAccepted', 'tracking_id']);
+            $data = $request->only(['otp_id', 'complaint', 'isConfidential', 'declarationAccepted']);
             $data['status'] = 'Open';
 
+            $otp = Otp::find($data['otp_id']);
+            if (!$otp) {
+                return response()->json(['success' => false, 'message' => 'OTP not found.'], 404);
+            }
+            $data['name'] = $otp->name;
+            $data['email'] = $otp->email;
+            $data['number'] = $otp->number;
+            $data['tracking_id'] = $otp->tracking_id;
+
             if ($request->hasFile('file')) {
-                $filePath = $request->file('file')->store('uploads', 'public');
-                $data['file'] = $filePath;
+                $file = $request->file('file');
+                $uploadPath = public_path('uploads');
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                $fileName = uniqid('complaint_') . '.' . $file->getClientOriginalExtension();
+                $file->move($uploadPath, $fileName);
+                $data['file'] = 'uploads/' . $fileName;
             }
 
             $complaint = Complaint::create($data);
 
             try {
-                // Send email to admin
                 Mail::to(env('MAIL_TO_ADDRESS', config('mail.from.address')))->send(new AdminComplaintNotification($complaint));
-                // Send email to user
                 Mail::to($complaint->email)->send(new UserComplaintNotification($complaint));
             } catch (\Exception $e) {
                 Log::error('Failed to send complaint emails: ' . $e->getMessage());
@@ -148,34 +145,7 @@ class HomeController extends Controller
      */
     public function export(Request $request)
     {
-        $query = Complaint::query();
-
-        if ($name = $request->query('name')) {
-            $query->where('name', 'like', "%{$name}%");
-        }
-        if ($email = $request->query('email')) {
-            $query->where('email', 'like', "%{$email}%");
-        }
-        if ($tracking_id = $request->query('tracking_id')) {
-            $query->where('tracking_id', $tracking_id);
-        }
-        if ($from_date = $request->query('from_date')) {
-            $query->whereDate('created_at', '>=', $from_date);
-        }
-        if ($to_date = $request->query('to_date')) {
-            $query->whereDate('created_at', '<=', $to_date);
-        }
-        if ($status = $request->query('status')) {
-            $query->where('status', $status);
-        }
-        if ($request->query('confidential')) {
-            $query->where('isConfidential', true);
-        }
-        if ($request->query('accepted')) {
-            $query->where('declarationAccepted', true);
-        }
-
-        $complaints = $query->get();
+        $complaints = Complaint::get();
 
         $filename = 'complaints_' . now()->format('Y-m-d_H-i-s') . '.csv';
 
@@ -208,7 +178,7 @@ class HomeController extends Controller
                     $complaint->status,
                     $complaint->isConfidential ? 'Yes' : 'No',
                     $complaint->declarationAccepted ? 'Yes' : 'No',
-                    $complaint->file ? asset('storage/' . $complaint->file) : '',
+                    $complaint->file ? asset($complaint->file) : '',
                     $complaint->created_at->format('Y-m-d H:i:s'),
                     $complaint->updated_at->format('Y-m-d H:i:s')
                 ]);
@@ -234,11 +204,9 @@ class HomeController extends Controller
             'status' => 'required|string|in:' . implode(',', array_keys(config('complaints.statuses'))),
         ]);
 
-        $oldStatus = $complaint->status;
         $complaint->update(['status' => $request->status]);
 
-        // Save status history
-        \App\Models\ComplaintStatusHistory::create([
+        ComplaintStatusHistory::create([
             'complaint_id' => $complaint->id,
             'status' => $request->status,
             'changed_by' => auth()->id(),
@@ -257,6 +225,10 @@ class HomeController extends Controller
     public function destroy(Request $request, Complaint $complaint): JsonResponse
     {
         try {
+            // Delete the associated file if it exists
+            if ($complaint->file && file_exists(public_path($complaint->file))) {
+                @unlink(public_path($complaint->file));
+            }
             $complaint->delete();
             return response()->json(['success' => true, 'message' => 'Complaint deleted successfully.']);
         } catch (\Exception $e) {
