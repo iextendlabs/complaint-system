@@ -69,9 +69,7 @@ class OtpController extends Controller
             } while (Otp::where('tracking_id', $tracking_id)->exists());
             $data['tracking_id'] = $tracking_id;
 
-            $appUrl = config('app.url', url('/'));
-            $trackLink = $appUrl . '/?tracking_id=' . $tracking_id;
-            $msg = "Your OTP is: $otpCode\nTracking ID: $tracking_id\nTrack your complaint: $trackLink";
+            $msg = "Your OTP is: $otpCode\nTracking ID: $tracking_id";
 
             if (!$this->sendOtpSms($data['number'], $msg)) {
                 return response()->json(['success' => false, 'message' => 'Failed to send OTP SMS.'], 500);
