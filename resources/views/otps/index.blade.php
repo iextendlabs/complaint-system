@@ -104,7 +104,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center">No OTPs found.</td>
+                                    <td colspan="6" class="text-center">No OTPs found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
