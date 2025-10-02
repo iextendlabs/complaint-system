@@ -31,162 +31,171 @@
             </div>
         </div>
         @can('complaint-list')
-        <div class="row">
-            <div class="col-lg-9 order-2 order-lg-1">
-                <div class="complaints-list row g-4" id="complaintsList">
-                    @forelse ($complaints as $complaint)
-                        <div class="complaints-list__item complaint-item col-12 col-md-6 col-lg-4"
-                            style="animation-delay: {{ $loop->index * 50 }}ms">
-                            <div class="complaint-card status-{{ Str::slug($complaint->status) }}">
-                                <div class="complaint-card__header d-flex justify-content-between align-items-start">
-                                    <div class="complaint-card__user d-flex align-items-center">
-                                        <div>
-                                            <small class="complaint-card__id text-muted">Tracking ID:#
-                                                {{ substr($complaint->tracking_id, 0, 8) }}</small>
-                                            <h6 class="complaint-card__name fw-bold text-dark mb-0 text-truncate"
-                                                style="max-width: 150px;" title="{{ $complaint->name }}">
-                                                {{ $complaint->name }}</h6>
-                                            <p> {{ $complaint->email }}</p>
+            <div class="row">
+                <div class="mb-3">
+                    <div class="btn-group">
+                        <button type="button" id="button-grid" class="btn btn-light active" data-bs-toggle="tooltip"
+                            aria-label="Grid" data-bs-original-title="Grid"><i class="bi bi-grid"></i></button>
+                        <button type="button" id="button-list" class="btn btn-light" data-bs-toggle="tooltip" aria-label="List"
+                            data-bs-original-title="List"><i class="bi bi-list"></i></button>
+                    </div>
+                </div>
+                <div class="col-lg-9 order-2 order-lg-1">
+                    <div class="complaints-list row g-4" id="complaintsList">
+                        @forelse ($complaints as $complaint)
+                            <div class="complaints-list__item complaint-item col-12 col-md-6 col-lg-4"
+                                style="animation-delay: {{ $loop->index * 50 }}ms">
+                                <div class="complaint-card status-{{ Str::slug($complaint->status) }}">
+                                    <div class="complaint-card__header d-flex justify-content-between align-items-start">
+                                        <div class="complaint-card__user d-flex align-items-center">
+                                            <div>
+                                                <small class="complaint-card__id text-muted">Tracking ID:#
+                                                    {{ substr($complaint->tracking_id, 0, 8) }}</small>
+                                                <h6 class="complaint-card__name fw-bold text-dark mb-0 text-truncate"
+                                                    style="max-width: 150px;" title="{{ $complaint->name }}">
+                                                    {{ $complaint->name }}</h6>
+                                                <p> {{ $complaint->email }}</p>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="complaint-card__status badge rounded-pill bg-{{ config('complaints.statuses')[$complaint->status] ?? 'secondary' }}-soft">{{ $complaint->status }}</span>
+                                    </div>
+
+                                    <p class="complaint-card__desc small my-3 flex-grow-1">
+                                        {{ Str::limit($complaint->complaint, 120) }}
+                                    </p>
+
+                                    @if ($complaint->isConfidential || $complaint->file)
+                                        <div class="complaint-card__meta mb-3">
+                                            @if ($complaint->isConfidential)
+                                                <span
+                                                    class="complaint-card__confidential badge bg-danger-soft text-danger small">Confidential</span>
+                                            @endif
+                                            @if ($complaint->file)
+                                                <a href="{{ asset($complaint->file) }}" target="_blank"
+                                                    class="complaint-card__attachment text-primary small text-decoration-none ms-2">
+                                                    <i class="bi bi-paperclip"></i> Attachment
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    <div
+                                        class="complaint-card__footer d-flex justify-content-between align-items-center border-top pt-2">
+                                        <small class="complaint-card__date text-muted fs-xs"><i class="bi bi-clock me-1"></i>
+                                            {{ $complaint->created_at->format('M j, Y') }}</small>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <a href="{{ route('complaints.show', $complaint) }}"
+                                                class="btn btn-sm btn-link text-info p-0" title="View">
+                                                <i class="bi bi-eye fs-5"></i>
+                                            </a>
+                                            @can('complaint-edit')
+                                                <button
+                                                    class="complaint-card__update-btn btn btn-sm btn-link text-primary p-0 update-status-btn"
+                                                    data-id="{{ $complaint->id }}" data-bs-toggle="modal"
+                                                    data-bs-target="#statusModal" title="Update">
+                                                    <i class="bi bi-pencil-square fs-5"></i>
+                                                </button>
+                                            @endcan
+                                            @can('complaint-delete')
+                                                <button
+                                                    class="complaint-card__delete-btn btn btn-sm btn-link text-danger p-0 delete-complaint-btn"
+                                                    data-id="{{ $complaint->id }}" title="Delete">
+                                                    <i class="bi bi-trash fs-5"></i>
+                                                </button>
+                                            @endcan
                                         </div>
                                     </div>
-                                    <span
-                                        class="complaint-card__status badge rounded-pill bg-{{ config('complaints.statuses')[$complaint->status] ?? 'secondary' }}-soft">{{ $complaint->status }}</span>
                                 </div>
-
-                                <p class="complaint-card__desc small my-3 flex-grow-1">
-                                    {{ Str::limit($complaint->complaint, 120) }}
-                                </p>
-
-                                @if ($complaint->isConfidential || $complaint->file)
-                                    <div class="complaint-card__meta mb-3">
-                                        @if ($complaint->isConfidential)
-                                            <span
-                                                class="complaint-card__confidential badge bg-danger-soft text-danger small">Confidential</span>
-                                        @endif
-                                        @if ($complaint->file)
-                                            <a href="{{ asset($complaint->file) }}" target="_blank"
-                                                class="complaint-card__attachment text-primary small text-decoration-none ms-2">
-                                                <i class="bi bi-paperclip"></i> Attachment
-                                            </a>
-                                        @endif
+                            </div>
+                        @empty
+                            <div class="col-12">
+                                <div class="alert alert-info text-center small">
+                                    No complaints found.
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+                <div class="col-lg-3 order-1 order-lg-2 mb-4 mb-lg-0">
+                    <form method="GET" action="{{ route('home') }}">
+                        <div class="filter filter--stylish sidebar-filter p-4 mb-4 mb-lg-0">
+                            <div class="filter__fields d-flex flex-column gap-4">
+                                <div class="mb-2">
+                                    <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                        for="filterName">Name</label>
+                                    <input id="filterName" type="text" name="name"
+                                        class="filter__input form-control form-control-sm rounded-pill" placeholder="Name"
+                                        value="{{ $filters['name'] ?? '' }}">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                        for="filterTrackingId">Tracking ID</label>
+                                    <input id="filterTrackingId" type="text" name="tracking_id"
+                                        class="filter__input form-control form-control-sm rounded-pill"
+                                        placeholder="Tracking ID" value="{{ $filters['tracking_id'] ?? '' }}">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                        for="filterEmail">Email</label>
+                                    <input id="filterEmail" type="text" name="email"
+                                        class="filter__input form-control form-control-sm rounded-pill" placeholder="Email"
+                                        value="{{ $filters['email'] ?? '' }}">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="filter__label form-label mb-1 fw-semibold text-muted">Date</label>
+                                    <div class="filter__date-range d-flex flex-wrap gap-2 align-items-center">
+                                        <input type="date" name="from_date"
+                                            class="filter__input filter__input--date form-control form-control-sm rounded-pill"
+                                            value="{{ $filters['from_date'] ?? '' }}">
+                                        <span class="mx-1 text-muted">-</span>
+                                        <input type="date" name="to_date"
+                                            class="filter__input filter__input--date form-control form-control-sm rounded-pill"
+                                            value="{{ $filters['to_date'] ?? '' }}">
                                     </div>
-                                @endif
-
-                                <div
-                                    class="complaint-card__footer d-flex justify-content-between align-items-center border-top pt-2">
-                                    <small class="complaint-card__date text-muted fs-xs"><i class="bi bi-clock me-1"></i>
-                                        {{ $complaint->created_at->format('M j, Y') }}</small>
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <a href="{{ route('complaints.show', $complaint) }}" class="btn btn-sm btn-link text-info p-0" title="View">
-                                            <i class="bi bi-eye fs-5"></i>
-                                        </a>
-                                        @can('complaint-edit')
-                                        <button
-                                            class="complaint-card__update-btn btn btn-sm btn-link text-primary p-0 update-status-btn"
-                                            data-id="{{ $complaint->id }}" data-bs-toggle="modal"
-                                            data-bs-target="#statusModal" title="Update">
-                                            <i class="bi bi-pencil-square fs-5"></i>
-                                        </button>
-                                        @endcan
-                                        @can('complaint-delete')
-                                        <button
-                                            class="complaint-card__delete-btn btn btn-sm btn-link text-danger p-0 delete-complaint-btn"
-                                            data-id="{{ $complaint->id }}" title="Delete">
-                                            <i class="bi bi-trash fs-5"></i>
-                                        </button>
-                                        @endcan
+                                </div>
+                                <div class="mb-2">
+                                    <label class="filter__label form-label mb-1 fw-semibold text-muted"
+                                        for="filterStatus">Status</label>
+                                    <select id="filterStatus" name="status"
+                                        class="filter__input form-select form-select-sm rounded-pill">
+                                        <option value="">All Statuses</option>
+                                        @foreach (config('complaints.statuses') as $status => $color)
+                                            <option value="{{ $status }}"
+                                                {{ ($filters['status'] ?? '') == $status ? 'selected' : '' }}>
+                                                {{ $status }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="filter__switches d-flex flex-column gap-2 mb-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="confidential" value="1"
+                                            id="confidentialCheck"
+                                            {{ isset($filters['confidential']) && $filters['confidential'] == '1' ? 'checked' : '' }}>
+                                        <label class="form-check-label small" for="confidentialCheck">Confidential</label>
                                     </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="accepted" value="1"
+                                            id="acceptedCheck"
+                                            {{ isset($filters['accepted']) && $filters['accepted'] == '1' ? 'checked' : '' }}>
+                                        <label class="form-check-label small" for="acceptedCheck">Declaration Accepted</label>
+                                    </div>
+                                </div>
+                                <div class="filter__actions d-flex gap-2 align-items-end mt-2">
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Apply</button>
+                                    <a href="{{ route('home') }}" class="btn btn-light btn-sm rounded-pill px-3">Clear</a>
                                 </div>
                             </div>
                         </div>
-                    @empty
-                        <div class="col-12">
-                            <div class="alert alert-info text-center small">
-                                No complaints found.
-                            </div>
-                        </div>
-                    @endforelse
+                    </form>
                 </div>
             </div>
-            <div class="col-lg-3 order-1 order-lg-2 mb-4 mb-lg-0">
-                <form method="GET" action="{{ route('home') }}">
-                    <div class="filter filter--stylish sidebar-filter p-4 mb-4 mb-lg-0">
-                        <div class="filter__fields d-flex flex-column gap-4">
-                            <div class="mb-2">
-                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
-                                    for="filterName">Name</label>
-                                <input id="filterName" type="text" name="name"
-                                    class="filter__input form-control form-control-sm rounded-pill" placeholder="Name"
-                                    value="{{ $filters['name'] ?? '' }}">
-                            </div>
-                            <div class="mb-2">
-                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
-                                    for="filterTrackingId">Tracking ID</label>
-                                <input id="filterTrackingId" type="text" name="tracking_id"
-                                    class="filter__input form-control form-control-sm rounded-pill"
-                                    placeholder="Tracking ID" value="{{ $filters['tracking_id'] ?? '' }}">
-                            </div>
-                            <div class="mb-2">
-                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
-                                    for="filterEmail">Email</label>
-                                <input id="filterEmail" type="text" name="email"
-                                    class="filter__input form-control form-control-sm rounded-pill" placeholder="Email"
-                                    value="{{ $filters['email'] ?? '' }}">
-                            </div>
-                            <div class="mb-2">
-                                <label class="filter__label form-label mb-1 fw-semibold text-muted">Date</label>
-                                <div class="filter__date-range d-flex flex-wrap gap-2 align-items-center">
-                                    <input type="date" name="from_date"
-                                        class="filter__input filter__input--date form-control form-control-sm rounded-pill"
-                                        value="{{ $filters['from_date'] ?? '' }}">
-                                    <span class="mx-1 text-muted">-</span>
-                                    <input type="date" name="to_date"
-                                        class="filter__input filter__input--date form-control form-control-sm rounded-pill"
-                                        value="{{ $filters['to_date'] ?? '' }}">
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <label class="filter__label form-label mb-1 fw-semibold text-muted"
-                                    for="filterStatus">Status</label>
-                                <select id="filterStatus" name="status"
-                                    class="filter__input form-select form-select-sm rounded-pill">
-                                    <option value="">All Statuses</option>
-                                    @foreach (config('complaints.statuses') as $status => $color)
-                                        <option value="{{ $status }}"
-                                            {{ ($filters['status'] ?? '') == $status ? 'selected' : '' }}>
-                                            {{ $status }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="filter__switches d-flex flex-column gap-2 mb-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="confidential" value="1"
-                                        id="confidentialCheck"
-                                        {{ isset($filters['confidential']) && $filters['confidential'] == '1' ? 'checked' : '' }}>
-                                    <label class="form-check-label small" for="confidentialCheck">Confidential</label>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="accepted" value="1"
-                                        id="acceptedCheck"
-                                        {{ isset($filters['accepted']) && $filters['accepted'] == '1' ? 'checked' : '' }}>
-                                    <label class="form-check-label small" for="acceptedCheck">Declaration Accepted</label>
-                                </div>
-                            </div>
-                            <div class="filter__actions d-flex gap-2 align-items-end mt-2">
-                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Apply</button>
-                                <a href="{{ route('home') }}" class="btn btn-light btn-sm rounded-pill px-3">Clear</a>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-        @if ($complaints->hasPages())
-            <div class="d-flex justify-content-center mt-4">
-                {{ $complaints->appends(request()->query())->links() }}
-            </div>
-        @endif
+            @if ($complaints->hasPages())
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $complaints->appends(request()->query())->links() }}
+                </div>
+            @endif
         @endcan
     </div>
 
@@ -214,9 +223,33 @@
 
     <script>
         $(document).ready(function() {
-            $('#exportCsvBtn').on('click', function() {
-                window.location.href = '{{ route('complaints.export') }}' + window.location.search;
+            // Grid/List toggle logic with localStorage persistence
+            function setViewMode(mode) {
+                if (mode === 'list') {
+                    $('#button-list').addClass('active');
+                    $('#button-grid').removeClass('active');
+                    $('#complaintsList').removeClass('grid-view row g-4').addClass('list-view');
+                    $('.complaints-list__item').removeClass('col-md-6 col-lg-4').addClass('col-12');
+                } else {
+                    $('#button-grid').addClass('active');
+                    $('#button-list').removeClass('active');
+                    $('#complaintsList').removeClass('list-view').addClass('grid-view row g-4');
+                    $('.complaints-list__item').removeClass('col-12').addClass('col-md-6 col-lg-4');
+                }
+            }
+
+            $('#button-grid').on('click', function() {
+                setViewMode('grid');
+                localStorage.setItem('complaintsViewMode', 'grid');
             });
+            $('#button-list').on('click', function() {
+                setViewMode('list');
+                localStorage.setItem('complaintsViewMode', 'list');
+            });
+
+            // On page load, restore view mode
+            var savedMode = localStorage.getItem('complaintsViewMode') || 'grid';
+            setViewMode(savedMode);
 
             let currentComplaintId = null;
 
@@ -251,7 +284,8 @@
                 const token = $('meta[name="csrf-token"]').attr('content');
 
                 $.ajax({
-                    url: `/complaints/${currentComplaintId}/update-status`,
+                    url: '{{ route('complaints.updateStatus', ['complaint' => 'COMPLAINT_ID']) }}'
+                        .replace('COMPLAINT_ID', currentComplaintId),
                     method: 'POST',
                     data: JSON.stringify({
                         status
@@ -278,7 +312,8 @@
                 if (!confirm('Are you sure you want to delete this complaint?')) return;
                 const token = $('meta[name="csrf-token"]').attr('content');
                 $.ajax({
-                    url: `/complaints/${id}`,
+                    url: '{{ route('complaints.destroy', ['complaint' => 'COMPLAINT_ID']) }}'
+                        .replace('COMPLAINT_ID', id),
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': token
@@ -299,4 +334,25 @@
         });
     </script>
 
+    <style>
+        /* List view styles */
+        #complaintsList.list-view {
+            display: flex !important;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        #complaintsList.list-view .complaints-list__item {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+        }
+
+        #complaintsList.grid-view .complaint-card {
+            min-height: 340px;
+        }
+        #complaintsList.list-view .complaint-card {
+            min-height: 240px;
+        }
+    </style>
 @endsection
